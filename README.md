@@ -8,7 +8,7 @@
  2. Admin
  3. Vendor
 
-#### Buyers
+#### Buyer
 
 - There will be login
   - login with Facebook/Gmail using there Api
@@ -24,7 +24,7 @@
 - User can enter a custom location  
 - If user has viewed any item then it will be saved as a searched history for that user.(to be stored in DB so that data persist across device)  
 - User can save any item as buy it later option (to be stored in DB so that data persist across device)  
-- For category page there will be option for filter and sort  
+- For category page there will be option for filter(Categories,price range) and sort (popularity,average rating,latest, low to high, high to low)
 - For the Home Screen all Feature items will be displayed which was decided by admin.  
 - User can add item to cart (to be stored in DB so that data persist across device)  
 - At buy page enter address or use the saved one to proceed to payment process.  
@@ -36,7 +36,7 @@
 - User can browse items without login but he/she can buy any item iff the same is logged in  
 - If some item is out of stock then user will get a option of Notify me to get the notification if item is available(to be stored in DB so that data persist across device).  
 - User can save ir delete payment card details  
-- user can vive tafing and write review on any products
+- user can give rating and write review on any products
 - can see all the users have put there items in cart (with details)
 - vendor page will be there to give a brief idea about the vendor to the user
 - We can give best Seller options depending upon the ratings
@@ -56,6 +56,7 @@
 - Admin can delete any rating and reviews of the customer
 - Admin can approve or disapprove vendor's request of adding new category
 - Admin can see all the pending items to deliver with some filters(vendor name,...) and sort(time, name...)
+- ***Admin will decide the minimun distance or minimum cost after which dilevery rates will applied***
 
 #### Vendor
 
@@ -70,6 +71,9 @@
 - Vendor can see all the pending orders from the lists
 - Vendor can give offers and promocode to the user
 - Vender can send Notification of there new offers
+- ***Vendor will decide if the item he/she added is returnable or not***
+- ***Vendor can see the items he gets as a return.***
+- ***Vendor can update the timing delivery of any particular item***
 
 ### Questions
 
@@ -80,7 +84,7 @@
 
 ## Models
 
-### User
+### Buyer
 
 ```JSON
  {
@@ -97,6 +101,11 @@
     recentlyViewItems:[String],
     isAuthenticated:Boolean,
     userToken:String,
+    cart:[{
+       productId:String,
+       noOfItems:Number,
+       checked:Boolean
+    }]
     address:[{
         name:String,
         mobileNumber:String,
@@ -112,6 +121,56 @@
         cardNumber:String
         expiryDate:Date
     }]
+ }
+ ```
+
+### Vendor
+
+```JSON
+ {
+    _id:String,
+    firstName:String,
+    middleName:String,
+    lastName:String,
+    email:String,
+    dob:String,
+    loginType:String, --Google/Facebook/Email/Mobile
+    password:String,
+    isAuthenticated:Boolean,
+    userToken:String,
+    about:String,
+    diabledItemsList:[productId],
+    disableAccount:Boolean,
+    storeAddress:[{
+         vendorAddressId:String,
+         name:String,
+         mobileNumber:String,
+         verifyMobileNumber:Boolean --when buying
+         pinCode:String,
+         houseNo:String,
+         area:String,
+         landMark:String,
+         state:String,
+         addressType:String,
+         deliveryRange:Number  --default to 7
+    }],
+    pendingOrders:[OrderId]
+ }
+ ```
+
+### Admin
+
+```JSON
+ {
+    _id:String,
+    name:String,
+    itemApprovalPending:[String],
+    blockedUser:[String],
+    blockedVendor:[String],
+    blockedItem:[String],
+    newCategoryAddPending:[String],
+    minDistanceForNoDeliveryCharge:Number,
+    minCostForNoDeliveryCharge:Number
  }
  ```
 
@@ -143,11 +202,22 @@
     _id:String,
     title:String,
     categoryId:String,
-    location:String
+    subcategoryId:String,
+    price:String,
+    image:String,
+    vendorId:String,
+    vendorAddressId:String,
+    location:String,
     quantity:Number,
-    tags:[String],
-    deliveryRange:String, --default to 7
-    returnable:Boolean
+    tags:[String], -- to be used as search Warrent
+    returnable:Boolean,
+    productDeliveryTime:{
+       start:Time,
+       end:Time
+    }
+    offer:{
+       discount:Number
+    }
  }
  ```
 
@@ -157,7 +227,52 @@
  {
     _id:String,
     userId:String,
-    products:[String]
+    orders:[
+      {
+       order_id:String,
+       totalAmount:Number,
+       paidAmount:Number,
+       orderType:String --SELF/DELIVERY
+       orderedOn:DateTime,
+       deliveredAt:DateTime,
+       promocode:String,
+       rating:Number,
+       deliveryCharge:Number,
+       feedback:String,
+       returnStatus:String, --No/Applied/Returned
+       products:[
+          {
+             product_id:String,
+             quantity:Number,
+             price:Number,
+             discount:Number
+          }
+       ],
+       paymentInfo:[{
+          method:String, -- COD/CC/DC/P/UPI
+          cardNo:String
+       }],
+       shippingAddress:[{
+         name:String,
+         mobileNumber:String,
+         pinCode:String,
+         houseNo:String,
+         area:String,
+         landMark:String,
+         state:String,
+         addressType:String
+      }],
+      billingAddress:[{
+            name:String,
+            mobileNumber:String,
+            pinCode:String,
+            houseNo:String,
+            area:String,
+            landMark:String,
+            state:String,
+            addressType:String
+      }],
+   ]
  }
 ```
 
@@ -170,6 +285,25 @@
     rating:number,
     body:String
  }
+```
+
+### MetaData Product
+
+```JSON
+{
+   newReleases:[product_id],
+   offeredProducts:[product_id]
+}
+```
+
+### Notification
+
+```JSON
+{
+   notificatioId:String,
+   message:String,
+   to:String
+}
 ```
 
 ## Database Details
